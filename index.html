@@ -1,203 +1,546 @@
-
 <!DOCTYPE html>
 <html lang="es">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>PrecioRadar RD | Compara precios</title>
-<meta name="description" content="Compara precios de electrodomésticos, tecnología y artículos del hogar en República Dominicana.">
-<style>
-*{box-sizing:border-box}
-body{margin:0;background:#f4f7fb;color:#172033;font-family:Arial,sans-serif}
-header{background:#102b50;color:white;padding:25px 6%}
-.logo{font-size:27px;font-weight:bold}
-.logo span{color:#54c4ff}
-header p{color:#d4e3f5;margin-bottom:0}
-main{max-width:1100px;margin:auto;padding:25px 18px}
-.hero{background:#fff;padding:30px;border-radius:16px}
-h1{font-size:30px;margin:0 0 10px}
-.subtitle{color:#64748b;line-height:1.5}
-.search{display:flex;gap:10px;margin-top:22px}
-input{flex:1;min-width:0;padding:15px;border:1px solid #cbd5e1;border-radius:9px;font-size:16px}
-button{border:0;border-radius:9px;padding:13px 18px;background:#0878ce;color:white;font-weight:bold;cursor:pointer}
-.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:20px 0}
-.stat{background:white;border-radius:12px;padding:18px}
-.stat strong{display:block;font-size:25px;color:#0878ce}
-.stat small{color:#64748b}
-h2{font-size:21px;margin-top:28px}
-.categories{display:flex;flex-wrap:wrap;gap:9px}
-.categories button{background:white;color:#24415f;border:1px solid #d8e1ec}
-.categories button.active{background:#0878ce;color:white}
-.results{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:14px;margin-top:16px}
-.product{background:white;border-radius:12px;padding:17px;border:1px solid #e4eaf1}
-.product img{width:100%;height:145px;object-fit:contain}
-.product h3{font-size:16px}
-.price{font-size:21px;font-weight:bold;color:#0878ce}
-.muted{color:#64748b;font-size:13px}
-.notice{background:#e8f4ff;color:#24547a;padding:14px;border-radius:10px;margin-top:20px;font-size:14px}
-#status{color:#64748b;margin:15px 0}
-footer{text-align:center;color:#64748b;padding:30px;font-size:13px}
-@media(max-width:550px){.stats{grid-template-columns:1fr}.search{flex-direction:column}h1{font-size:25px}}
-</style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PrecioRadar RD | Compara precios en República Dominicana</title>
+  <meta name="description" content="Compara precios de productos en tiendas dominicanas. Encuentra ofertas y visita directamente cada tienda.">
+
+  <style>
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: #f4f6fa;
+      color: #172033;
+    }
+
+    header {
+      background: #10264a;
+      color: white;
+      padding: 28px 18px;
+    }
+
+    .container {
+      max-width: 1150px;
+      margin: auto;
+      padding: 0 16px;
+    }
+
+    header h1 {
+      margin: 0 0 8px;
+      font-size: 30px;
+    }
+
+    header p {
+      margin: 0;
+      color: #d6e2f5;
+    }
+
+    main { padding: 24px 0 45px; }
+
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      margin-bottom: 22px;
+    }
+
+    .stat {
+      background: white;
+      border-radius: 12px;
+      padding: 17px;
+      box-shadow: 0 2px 8px #15294a0d;
+    }
+
+    .stat strong {
+      display: block;
+      font-size: 25px;
+      color: #1558bd;
+    }
+
+    .stat span {
+      color: #68758a;
+      font-size: 13px;
+    }
+
+    .search {
+      width: 100%;
+      padding: 15px;
+      border: 1px solid #d9dfeb;
+      border-radius: 10px;
+      font-size: 16px;
+      margin-bottom: 14px;
+      background: white;
+    }
+
+    .filters {
+      display: flex;
+      gap: 9px;
+      flex-wrap: wrap;
+      margin-bottom: 22px;
+    }
+
+    .filter {
+      border: 1px solid #d9dfeb;
+      border-radius: 20px;
+      padding: 9px 15px;
+      background: white;
+      color: #34445e;
+      cursor: pointer;
+    }
+
+    .filter.active {
+      background: #1558bd;
+      color: white;
+      border-color: #1558bd;
+    }
+
+    #status {
+      color: #68758a;
+      margin: 12px 0;
+      font-size: 14px;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(245px, 1fr));
+      gap: 17px;
+    }
+
+    .product {
+      background: white;
+      border-radius: 13px;
+      overflow: hidden;
+      box-shadow: 0 3px 12px #15294a12;
+      border: 1px solid #e9edf4;
+    }
+
+    .product-image {
+      height: 190px;
+      background: #f8f9fb;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 12px;
+    }
+
+    .product-image img {
+      max-width: 100%;
+      max-height: 165px;
+      object-fit: contain;
+    }
+
+    .product-body { padding: 15px; }
+
+    .product h3 {
+      font-size: 16px;
+      line-height: 1.4;
+      margin: 0 0 7px;
+    }
+
+    .muted {
+      color: #748095;
+      font-size: 13px;
+    }
+
+    .offer {
+      border-top: 1px solid #edf0f5;
+      margin-top: 14px;
+      padding-top: 13px;
+    }
+
+    .offer-store {
+      font-weight: bold;
+      font-size: 14px;
+    }
+
+    .offer-price {
+      color: #1558bd;
+      font-weight: bold;
+      font-size: 23px;
+      margin: 7px 0;
+    }
+
+    .old-price {
+      color: #8993a3;
+      font-size: 13px;
+      text-decoration: line-through;
+      margin-left: 6px;
+    }
+
+    .buy-link {
+      display: block;
+      text-align: center;
+      background: #10264a;
+      color: white;
+      padding: 12px;
+      text-decoration: none;
+      border-radius: 8px;
+      margin-top: 10px;
+      font-size: 14px;
+      font-weight: bold;
+    }
+
+    .buy-link:hover { background: #1558bd; }
+
+    .empty {
+      background: white;
+      padding: 30px;
+      border-radius: 12px;
+      text-align: center;
+      color: #68758a;
+      grid-column: 1 / -1;
+    }
+
+    footer {
+      text-align: center;
+      padding: 25px;
+      color: #748095;
+      font-size: 13px;
+    }
+
+    @media (max-width: 600px) {
+      header h1 { font-size: 25px; }
+      .stats { gap: 8px; }
+      .stat { padding: 12px; }
+      .stat strong { font-size: 21px; }
+      .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+      .product-image { height: 145px; }
+      .product-body { padding: 11px; }
+      .product h3 { font-size: 14px; }
+      .offer-price { font-size: 19px; }
+      .buy-link { font-size: 12px; padding: 10px 5px; }
+    }
+  </style>
 </head>
+
 <body>
-
-<header>
-  <div class="logo">PrecioRadar <span>RD</span></div>
-  <p>Compara. Ahorra. Compra mejor.</p>
-</header>
-
-<main>
-  <section class="hero">
-    <h1>Encuentra el mejor precio en RD</h1>
-    <p class="subtitle">Compara productos de diferentes tiendas online de República Dominicana y consulta su historial de precios.</p>
-    <div class="search">
-      <input id="search" type="search" placeholder="Buscar marca, modelo o producto...">
-      <button onclick="loadProducts()">Buscar</button>
+  <header>
+    <div class="container">
+      <h1>📡 PrecioRadar RD</h1>
+      <p>Compara precios. Encuentra mejores ofertas. Compra directamente.</p>
     </div>
-  </section>
+  </header>
 
-  <section class="stats">
-    <div class="stat"><strong id="productCount">—</strong><small>Productos registrados</small></div>
-    <div class="stat"><strong id="storeCount">—</strong><small>Tiendas registradas</small></div>
-    <div class="stat"><strong id="listingCount">—</strong><small>Ofertas registradas</small></div>
-  </section>
+  <main class="container">
+    <section class="stats">
+      <div class="stat">
+        <strong id="totalProducts">—</strong>
+        <span>Productos</span>
+      </div>
+      <div class="stat">
+        <strong id="totalStores">—</strong>
+        <span>Tiendas</span>
+      </div>
+      <div class="stat">
+        <strong id="totalOffers">—</strong>
+        <span>Ofertas registradas</span>
+      </div>
+    </section>
 
-  <h2>Categorías</h2>
-  <div class="categories">
-    <button class="active" onclick="selectCategory('',this)">Todos</button>
-    <button onclick="selectCategory('Electrodomésticos',this)">Electrodomésticos</button>
-    <button onclick="selectCategory('Electrónica',this)">Electrónica</button>
-    <button onclick="selectCategory('Muebles',this)">Muebles</button>
-    <button onclick="selectCategory('Hogar',this)">Hogar</button>
-  </div>
+    <input
+      id="search"
+      class="search"
+      type="search"
+      placeholder="Buscar televisores, celulares, neveras, laptops..."
+    >
 
-  <h2>Productos disponibles</h2>
-  <div id="status">Conectando con PrecioRadar RD...</div>
-  <section id="results" class="results"></section>
+    <div class="filters">
+      <button class="filter active" data-category="Todas">Todas</button>
+      <button class="filter" data-category="TV y Tecnología">TV y Tecnología</button>
+      <button class="filter" data-category="Electro Hogar">Electro Hogar</button>
+    </div>
 
-  <div class="notice">
-    PrecioRadar RD registra precios online diariamente. El historial comenzará a construirse a medida que se recopilen datos reales. No mostramos precios históricos inventados.
-  </div>
-</main>
+    <p id="status">Conectando con PrecioRadar RD...</p>
+    <section id="products" class="grid"></section>
+  </main>
 
-<footer>PrecioRadar RD · República Dominicana</footer>
+  <footer>
+    PrecioRadar RD · Comparación de precios de tiendas dominicanas
+  </footer>
 
-<script>
-const SUPABASE_URL = "https://igitecomybuxyrnyemfd.supabase.co";
+  <script>
+    const SUPABASE_URL = "https://igitecomybuxyrnyemfd.supabase.co";
+    const SUPABASE_KEY = "sb_publishable_VlXgJFn-c0T3UqLc9rG8WQ_T2pAtYnG";
 
-// sb_publishable_VlXgJFn-c0T3UqLc9rG8WQ_T2pAtYnG:
-const SUPABASE_KEY = "sb_publishable_VlXgJFn-c0T3UqLc9rG8WQ_T2pAtYnG";
+    let allProducts = [];
+    let selectedCategory = "Todas";
 
-let category = "";
+    async function api(table, params = {}) {
+      const url = new URL(`${SUPABASE_URL}/rest/v1/${table}`);
 
-async function api(table, query = "") {
-  const response = await fetch(
-    `${SUPABASE_URL}/rest/v1/${table}?${query}`,
-    {
-      headers: {
-        apikey: SUPABASE_KEY,
-        Authorization: `Bearer ${SUPABASE_KEY}`
+      Object.entries(params).forEach(([key, value]) => {
+        url.searchParams.set(key, value);
+      });
+
+      const response = await fetch(url, {
+        headers: {
+          apikey: SUPABASE_KEY,
+          Authorization: `Bearer ${SUPABASE_KEY}`
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error(`Error consultando ${table}: ${response.status}`);
+      }
+
+      return response.json();
+    }
+
+    function escapeHTML(value) {
+      return String(value ?? "").replace(/[&<>"']/g, char => ({
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        '"': "&quot;",
+        "'": "&#039;"
+      })[char]);
+    }
+
+    function safeUrl(value) {
+      try {
+        const url = new URL(value);
+        return ["http:", "https:"].includes(url.protocol) ? url.href : "";
+      } catch {
+        return "";
       }
     }
-  );
 
-  if (!response.ok) {
-    throw new Error(`Error consultando ${table}: ${response.status}`);
-  }
+    function money(value) {
+      if (value === null || value === undefined || value === "") {
+        return "Precio no disponible";
+      }
 
-  return response.json();
-}
-
-async function loadStats() {
-  try {
-    const [products, stores, listings] = await Promise.all([
-      api("products", "select=id"),
-      api("stores", "select=id"),
-      api("listings", "select=id")
-    ]);
-
-    document.getElementById("productCount").textContent = products.length;
-    document.getElementById("storeCount").textContent = stores.length;
-    document.getElementById("listingCount").textContent = listings.length;
-  } catch (error) {
-    console.error(error);
-  }
-}
-
-function escapeHTML(value) {
-  return String(value ?? "").replace(/[&<>"']/g, char => ({
-    "&":"&amp;", "<":"&lt;", ">":"&gt;",
-    '"':"&quot;", "'":"&#39;"
-  })[char]);
-}
-
-async function loadProducts() {
-  const status = document.getElementById("status");
-  const results = document.getElementById("results");
-  const search = document.getElementById("search").value.trim();
-
-  status.textContent = "Buscando productos...";
-  results.innerHTML = "";
-
-  try {
-    const params = new URLSearchParams();
-    params.set("select", "id,name,brand,model,category,image_url");
-    params.set("order", "name.asc");
-    params.set("limit", "100");
-
-    if (category) {
-      params.set("category", `eq.${category}`);
+      return new Intl.NumberFormat("es-DO", {
+        style: "currency",
+        currency: "DOP",
+        maximumFractionDigits: 2
+      }).format(Number(value));
     }
 
-    if (search) {
-      params.set("or", `(name.ilike.*${search}*,brand.ilike.*${search}*,model.ilike.*${search}*)`);
+    async function loadData() {
+      const status = document.getElementById("status");
+
+      try {
+        status.textContent = "Cargando productos y ofertas...";
+
+        const products = await api("products", {
+          select: "id,name,brand,model,category,image_url",
+          order: "name.asc",
+          limit: "1000"
+        });
+
+        allProducts = products;
+
+        if (!products.length) {
+          document.getElementById("totalProducts").textContent = "0";
+          document.getElementById("totalStores").textContent = "0";
+          document.getElementById("totalOffers").textContent = "0";
+
+          status.textContent = "Todavía no hay productos registrados.";
+          renderProducts();
+          return;
+        }
+
+        const ids = products.map(p => p.id);
+
+        const listings = await api("listings", {
+          select: "id,product_id,store_id,product_url,availability",
+          product_id: `in.(${ids.join(",")})`,
+          limit: "2000"
+        });
+
+        const storeIds = [...new Set(listings.map(l => l.store_id).filter(Boolean))];
+        const listingIds = listings.map(l => l.id);
+
+        let stores = [];
+        let history = [];
+
+        if (storeIds.length) {
+          stores = await api("stores", {
+            select: "id,name",
+            id: `in.(${storeIds.join(",")})`,
+            limit: "500"
+          });
+        }
+
+        if (listingIds.length) {
+          history = await api("price_history", {
+            select: "listing_id,price,original_price,captured_at",
+            listing_id: `in.(${listingIds.join(",")})`,
+            order: "captured_at.desc",
+            limit: "5000"
+          });
+        }
+
+        const storeMap = new Map(stores.map(s => [String(s.id), s.name]));
+        const latestPrice = new Map();
+
+        for (const item of history) {
+          const key = String(item.listing_id);
+
+          if (!latestPrice.has(key)) {
+            latestPrice.set(key, item);
+          }
+        }
+
+        const offersByProduct = new Map();
+
+        for (const listing of listings) {
+          const price = latestPrice.get(String(listing.id));
+
+          const offer = {
+            store: storeMap.get(String(listing.store_id)) || "Tienda",
+            url: safeUrl(listing.product_url),
+            availability: listing.availability,
+            price: price?.price,
+            originalPrice: price?.original_price
+          };
+
+          const key = String(listing.product_id);
+
+          if (!offersByProduct.has(key)) {
+            offersByProduct.set(key, []);
+          }
+
+          offersByProduct.get(key).push(offer);
+        }
+
+        allProducts = products.map(product => ({
+          ...product,
+          offers: (offersByProduct.get(String(product.id)) || [])
+            .sort((a, b) => {
+              const pa = Number(a.price);
+              const pb = Number(b.price);
+
+              if (!Number.isFinite(pa)) return 1;
+              if (!Number.isFinite(pb)) return -1;
+              return pa - pb;
+            })
+        }));
+
+        document.getElementById("totalProducts").textContent = products.length;
+        document.getElementById("totalStores").textContent = stores.length;
+        document.getElementById("totalOffers").textContent = listings.length;
+
+        status.textContent = `${products.length} productos encontrados.`;
+        renderProducts();
+
+      } catch (error) {
+        console.error(error);
+        status.textContent = "No pudimos cargar los datos. Revisa la conexión con Supabase.";
+      }
     }
 
-    const products = await api("products", params.toString());
+    function renderProducts() {
+      const search = document.getElementById("search").value
+        .trim()
+        .toLowerCase();
 
-    if (!products.length) {
-      status.textContent = "Todavía no hay productos registrados. Pronto comenzaremos a incorporar tiendas y productos reales.";
-      return;
+      const filtered = allProducts.filter(product => {
+        const text = [
+          product.name,
+          product.brand,
+          product.model
+        ].join(" ").toLowerCase();
+
+        const matchesSearch = text.includes(search);
+        const matchesCategory =
+          selectedCategory === "Todas" ||
+          product.category === selectedCategory;
+
+        return matchesSearch && matchesCategory;
+      });
+
+      const container = document.getElementById("products");
+
+      if (!filtered.length) {
+        container.innerHTML = `
+          <div class="empty">
+            No encontramos productos con esa búsqueda.
+          </div>`;
+        return;
+      }
+
+      container.innerHTML = filtered.map(product => {
+        const image = safeUrl(product.image_url);
+        const offers = product.offers || [];
+
+        return `
+          <article class="product">
+            <div class="product-image">
+              ${image
+                ? `<img src="${escapeHTML(image)}" alt="${escapeHTML(product.name)}" loading="lazy">`
+                : `<span class="muted">Imagen no disponible</span>`
+              }
+            </div>
+
+            <div class="product-body">
+              <h3>${escapeHTML(product.name)}</h3>
+
+              <p class="muted">
+                ${escapeHTML(product.brand || "")}
+                ${product.model ? " · Modelo: " + escapeHTML(product.model) : ""}
+              </p>
+
+              ${
+                offers.length
+                  ? offers.map(offer => `
+                    <div class="offer">
+                      <div class="offer-store">${escapeHTML(offer.store)}</div>
+
+                      <div class="offer-price">
+                        ${money(offer.price)}
+                        ${
+                          offer.originalPrice &&
+                          Number(offer.originalPrice) > Number(offer.price)
+                            ? `<span class="old-price">${money(offer.originalPrice)}</span>`
+                            : ""
+                        }
+                      </div>
+
+                      ${offer.availability
+                        ? `<div class="muted">${escapeHTML(offer.availability)}</div>`
+                        : ""
+                      }
+
+                      ${
+                        offer.url
+                          ? `<a class="buy-link"
+                               href="${escapeHTML(offer.url)}"
+                               target="_blank"
+                               rel="noopener noreferrer">
+                               Ver producto en ${escapeHTML(offer.store)} ↗
+                             </a>`
+                          : `<p class="muted">Enlace no disponible</p>`
+                      }
+                    </div>
+                  `).join("")
+                  : `<div class="offer muted">Todavía no hay ofertas registradas.</div>`
+              }
+            </div>
+          </article>
+        `;
+      }).join("");
     }
 
-    status.textContent = `${products.length} producto(s) encontrado(s).`;
+    document.getElementById("search").addEventListener("input", renderProducts);
 
-    results.innerHTML = products.map(product => `
-      <article class="product">
-        ${product.image_url ? `<img src="${escapeHTML(product.image_url)}" alt="${escapeHTML(product.name)}">` : ""}
-        <h3>${escapeHTML(product.name)}</h3>
-        <p class="muted">${escapeHTML(product.brand || "")} ${escapeHTML(product.model || "")}</p>
-        <p class="muted">${escapeHTML(product.category)}</p>
-        <p class="price">Precio pendiente</p>
-        <p class="muted">Esperando registros de precios.</p>
-      </article>
-    `).join("");
+    document.querySelectorAll(".filter").forEach(button => {
+      button.addEventListener("click", () => {
+        document.querySelectorAll(".filter").forEach(b =>
+          b.classList.remove("active")
+        );
 
-  } catch (error) {
-    console.error(error);
-    status.textContent = "No pudimos conectar. Revisa la configuración de Supabase.";
-  }
-}
+        button.classList.add("active");
+        selectedCategory = button.dataset.category;
+        renderProducts();
+      });
+    });
 
-function selectCategory(value, button) {
-  category = value;
-  document.querySelectorAll(".categories button").forEach(b => b.classList.remove("active"));
-  button.classList.add("active");
-  loadProducts();
-}
-
-document.getElementById("search").addEventListener("keydown", event => {
-  if (event.key === "Enter") loadProducts();
-});
-
-if (SUPABASE_KEY !== "sb_publishable_VlXgJFn-c0T3UqLc9rG8WQ_T2pAtYnG") {
-  loadStats();
-  loadProducts();
-} else {
-  document.getElementById("status").textContent = "Falta configurar la Publishable Key de Supabase.";
-}
-</script>
-
+    loadData();
+  </script>
 </body>
 </html>
