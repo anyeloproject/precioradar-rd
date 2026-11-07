@@ -2,7 +2,7 @@
 import json
 import re
 import time
-from urllib.parse import urljoin, urlparse, parse_qs
+from urllib.parse import urljoin, urlparse, parse_qs, urlencode, urlunparse
 
 import requests
 from bs4 import BeautifulSoup
@@ -21,9 +21,12 @@ MAX_PAGES = 10
 def money(value):
     if not value:
         return None
+
     match = PRICE_RE.search(value.replace("\xa0", " "))
+
     if not match:
         return None
+
     try:
         return float(match.group(1).replace(",", ""))
     except ValueError:
@@ -32,11 +35,20 @@ def money(value):
 
 def get_sku(url, text=""):
     match = re.search(r"(\d{6,})", url)
+
     if match:
         return match.group(1)
 
     match = re.search(r"\b[A-Z0-9]{6,}\b", text.upper())
+
     return match.group(0) if match else None
+
+
+def get_category(url):
+    if "tv-y-tecnologia" in url.lower():
+        return "TV y Tecnología"
+
+    return "Electro Hogar"
 
 
 def extract_casa_cuesta(card, base_url):
@@ -45,6 +57,7 @@ def extract_casa_cuesta(card, base_url):
     title_node = card.select_one(
         ".product-item-link, .product.name a, a.product-item-link"
     )
+
     link_node = title_node or card.select_one("a[href]")
 
     price_node = card.select_one(
@@ -63,6 +76,7 @@ def extract_casa_cuesta(card, base_url):
     old_node = card.select_one(
         ".old-price .price, .special-price .old-price"
     )
+
     if old_node:
         old = money(old_node.get_text(" ", strip=True))
 
@@ -81,6 +95,7 @@ def extract_casa_cuesta(card, base_url):
 
 def extract_jumbo(card, base_url):
     details = card.select_one(".product-item-details")
+
     if not details:
         return None
 
@@ -89,6 +104,7 @@ def extract_jumbo(card, base_url):
     link_node = details.select_one(
         "a.product-item-link, .product-item-name a"
     )
+
     if not link_node:
         link_node = card.select_one("a[href*='jumbo.com.do']")
 
@@ -99,12 +115,14 @@ def extract_jumbo(card, base_url):
     url = urljoin(base_url, link_node.get("href", ""))
 
     price_box = details.select_one(".price-box")
+
     if not price_box:
         return None
 
     current_node = price_box.select_one(
         ".special-price .price, .price-final_price .price"
     )
+
     old_node = price_box.select_one(".old-price .price")
 
     if current_node:
@@ -114,6 +132,7 @@ def extract_jumbo(card, base_url):
             money(node.get_text(" ", strip=True))
             for node in price_box.select(".price")
         ]
+
         prices = [p for p in prices if p is not None]
         current = prices[0] if prices else None
 
@@ -136,6 +155,7 @@ def next_page_url(soup, current_url):
     node = soup.select_one(
         "a.action.next, li.pages-item-next a, a[rel='next']"
     )
+
     if node and node.get("href"):
         return urljoin(current_url, node["href"])
 
@@ -145,8 +165,6 @@ def next_page_url(soup, current_url):
     page = int(params.get("p", ["1"])[0])
     params["p"] = [str(page + 1)]
 
-    from urllib.parse import urlencode, urlunparse
-
     return urlunparse(
         parsed._replace(query=urlencode(params, doseq=True))
     )
@@ -155,15 +173,20 @@ def next_page_url(soup, current_url):
 def scrape_store(store):
     name = store["name"]
     url = store["url"]
+    category = get_category(url)
+
     products = {}
     visited = set()
 
     print("\n" + "=" * 55)
     print("TIENDA:", name)
+    print("CATEGORÍA:", category)
 
     for page in range(1, MAX_PAGES + 1):
+
         if url in visited:
             break
+
         visited.add(url)
 
         try:
@@ -172,7 +195,11 @@ def scrape_store(store):
                 headers=HEADERS,
                 timeout=40
             )
-            print("PÁGINA", page, "| HTTP:", response.status_code)
+
+            print(
+                "PÁGINA:", page,
+                "| HTTP:", response.status_code
+            )
 
             if response.status_code != 200:
                 break
@@ -193,13 +220,19 @@ def scrape_store(store):
 
             for card in cards:
                 product = extractor(card, url)
+
                 if product:
+                    product["category"] = category
+
                     key = product["url"] or (
-                        product["name"] + str(product["current_price"])
+                        product["name"]
+                        + str(product["current_price"])
                     )
+
                     products[key] = product
 
             added = len(products) - before
+
             print(
                 "Tarjetas:", len(cards),
                 "| Productos válidos nuevos:", added
@@ -224,9 +257,10 @@ def scrape_store(store):
 
     for product in list(products.values())[:5]:
         print("\nPRODUCTO:", product["name"])
+        print("CATEGORÍA:", product["category"])
         print("PRECIO ACTUAL:", product["current_price"])
         print("PRECIO ANTERIOR:", product["previous_price"])
-        print("SKU:", product["sku"])
+        print("SKU / ID DETECTADO:", product["sku"])
         print("ENLACE:", product["url"])
 
     return list(products.values())
@@ -249,7 +283,9 @@ def main():
 
     print("\n" + "=" * 55)
     print("TOTAL DE PRODUCTOS EXTRAÍDOS:", total)
+    print("LÍMITE:", MAX_PAGES, "PÁGINAS POR CATEGORÍA")
     print("NO SE GUARDÓ NINGÚN DATO.")
+    print("SUPABASE SIGUE DESACTIVADO.")
     print("FIN DE LA PRUEBA.")
 
 
