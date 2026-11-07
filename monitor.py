@@ -1,4 +1,3 @@
-
 import json
 import re
 import requests
@@ -11,66 +10,49 @@ HEADERS = {
 PRICE = re.compile(r"(?:RD\$|US\$|\$)\s?[\d,.]+")
 
 
-def inspect_store(store):
-    print("\n" + "=" * 55)
-    print("TIENDA:", store["name"])
+def inspect_jumbo(store):
+    print("\nTIENDA:", store["name"])
 
-    try:
-        response = requests.get(
-            store["url"],
-            headers=HEADERS,
-            timeout=40
-        )
-        print("HTTP:", response.status_code)
+    response = requests.get(
+        store["url"],
+        headers=HEADERS,
+        timeout=40
+    )
 
-        soup = BeautifulSoup(response.text, "lxml")
-        found = 0
+    print("HTTP:", response.status_code)
+    soup = BeautifulSoup(response.text, "lxml")
 
-        for node in soup.find_all(string=PRICE):
-            parent = node.parent
+    boxes = soup.select("div.price-box")
+    print("BLOQUES DE PRECIO:", len(boxes))
 
-            if not parent:
-                continue
+    for number, price_box in enumerate(boxes[:3], 1):
+        print("\n" + "=" * 45)
+        print("PRODUCTO DE MUESTRA:", number)
 
-            # Subir por los contenedores del precio.
-            current = parent
+        current = price_box
 
-            for level in range(5):
-                if not current:
-                    break
+        for level in range(1, 9):
+            current = current.parent
 
-                text = current.get_text(" ", strip=True)
-
-                if len(text) > 35 and len(text) < 1500:
-                    classes = current.get("class", [])
-                    links = [
-                        a.get("href")
-                        for a in current.find_all("a", href=True)
-                    ]
-
-                    print("\nPRECIO:", node.strip())
-                    print("NIVEL:", level)
-                    print("ETIQUETA:", current.name)
-                    print("CLASES:", classes)
-                    print("CONTENIDO:", text[:500])
-                    print("ENLACES:", links[:5])
-
-                    found += 1
-                    break
-
-                current = current.parent
-
-            if found >= 6:
+            if not current:
                 break
 
-        print("\nMUESTRAS INSPECCIONADAS:", found)
+            classes = current.get("class", [])
+            text = current.get_text(" ", strip=True)
+            links = [
+                a.get("href")
+                for a in current.find_all("a", href=True)
+            ]
 
-    except Exception as error:
-        print("ERROR:", error)
+            print("\nNIVEL:", level)
+            print("ETIQUETA:", current.name)
+            print("CLASES:", classes)
+            print("TEXTO:", text[:500])
+            print("ENLACES:", links[:5])
 
 
 def main():
-    print("PRECIO RADAR RD - INSPECCIÓN DE PRODUCTOS")
+    print("PRECIO RADAR RD - INSPECCIÓN JUMBO")
     print("SUPABASE: DESACTIVADO")
     print("SOLO LECTURA")
 
@@ -78,8 +60,8 @@ def main():
         stores = json.load(file)
 
     for store in stores:
-        if store.get("enabled"):
-            inspect_store(store)
+        if store.get("enabled") and store["name"].lower() == "jumbo":
+            inspect_jumbo(store)
 
     print("\nFIN. NO SE GUARDÓ NINGÚN DATO.")
 
