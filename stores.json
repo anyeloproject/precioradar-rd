@@ -1,0 +1,12 @@
+[
+  {
+    "name": "Casa Cuesta",
+    "url": "https://casacuesta.com/",
+    "enabled": true
+  },
+  {
+    "name": "Jumbo",
+    "url": "https://jumbo.com.do/",
+    "enabled": true
+  }
+]
