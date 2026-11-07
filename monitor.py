@@ -2,7 +2,13 @@
 import json
 import re
 import time
-from urllib.parse import urljoin, urlparse, parse_qs, urlencode, urlunparse
+from urllib.parse import (
+    urljoin,
+    urlparse,
+    parse_qs,
+    urlencode,
+    urlunparse
+)
 
 import requests
 from bs4 import BeautifulSoup
@@ -33,15 +39,52 @@ def money(value):
         return None
 
 
-def get_sku(url, text=""):
+def clean_url(base_url, href):
+    if not href:
+        return None
+
+    full_url = urljoin(base_url, href.strip())
+    parsed = urlparse(full_url)
+
+    clean_path = re.sub(r"/{2,}", "/", parsed.path)
+
+    return urlunparse((
+        parsed.scheme,
+        parsed.netloc,
+        clean_path,
+        parsed.params,
+        parsed.query,
+        parsed.fragment
+    ))
+
+
+def get_store_id(url):
     match = re.search(r"(\d{6,})", url)
 
-    if match:
-        return match.group(1)
+    return match.group(1) if match else None
 
-    match = re.search(r"\b[A-Z0-9]{6,}\b", text.upper())
 
-    return match.group(0) if match else None
+def get_model(name):
+    if not name:
+        return None
+
+    text = name.upper()
+
+    candidates = re.findall(
+        r"(?<![A-Z0-9])[A-Z0-9]+(?:-[A-Z0-9]+)*(?![A-Z0-9])",
+        text
+    )
+
+    for candidate in reversed(candidates):
+        compact = candidate.replace("-", "")
+
+        has_letters = bool(re.search(r"[A-Z]", compact))
+        has_numbers = bool(re.search(r"\d", compact))
+
+        if has_letters and has_numbers and len(compact) >= 5:
+            return candidate
+
+    return None
 
 
 def get_category(url):
@@ -61,26 +104,26 @@ def extract_casa_cuesta(card, base_url):
     link_node = title_node or card.select_one("a[href]")
 
     price_node = card.select_one(
-        ".price, .special-price .price, .price-final_price"
+        ".special-price .price, "
+        ".price-final_price .price, "
+        ".price-box .price"
     )
 
     if not title_node or not link_node or not price_node:
         return None
 
     name = title_node.get_text(" ", strip=True)
-    url = urljoin(base_url, link_node.get("href", ""))
+    url = clean_url(base_url, link_node.get("href"))
 
     current = money(price_node.get_text(" ", strip=True))
     old = None
 
-    old_node = card.select_one(
-        ".old-price .price, .special-price .old-price"
-    )
+    old_node = card.select_one(".old-price .price")
 
     if old_node:
         old = money(old_node.get_text(" ", strip=True))
 
-    if not name or current is None:
+    if not name or current is None or not url:
         return None
 
     return {
@@ -88,8 +131,9 @@ def extract_casa_cuesta(card, base_url):
         "name": name,
         "current_price": current,
         "previous_price": old,
-        "sku": get_sku(url, text),
-        "url": url,
+        "model": get_model(name),
+        "store_product_id": get_store_id(url),
+        "url": url
     }
 
 
@@ -112,7 +156,7 @@ def extract_jumbo(card, base_url):
         return None
 
     name = link_node.get_text(" ", strip=True)
-    url = urljoin(base_url, link_node.get("href", ""))
+    url = clean_url(base_url, link_node.get("href"))
 
     price_box = details.select_one(".price-box")
 
@@ -138,7 +182,7 @@ def extract_jumbo(card, base_url):
 
     old = money(old_node.get_text(" ", strip=True)) if old_node else None
 
-    if not name or current is None:
+    if not name or current is None or not url:
         return None
 
     return {
@@ -146,8 +190,9 @@ def extract_jumbo(card, base_url):
         "name": name,
         "current_price": current,
         "previous_price": old,
-        "sku": get_sku(url, text),
-        "url": url,
+        "model": get_model(name),
+        "store_product_id": get_store_id(url),
+        "url": url
     }
 
 
@@ -157,7 +202,7 @@ def next_page_url(soup, current_url):
     )
 
     if node and node.get("href"):
-        return urljoin(current_url, node["href"])
+        return clean_url(current_url, node["href"])
 
     parsed = urlparse(current_url)
     params = parse_qs(parsed.query)
@@ -165,9 +210,11 @@ def next_page_url(soup, current_url):
     page = int(params.get("p", ["1"])[0])
     params["p"] = [str(page + 1)]
 
-    return urlunparse(
+    next_url = urlunparse(
         parsed._replace(query=urlencode(params, doseq=True))
     )
+
+    return clean_url(current_url, next_url)
 
 
 def scrape_store(store):
@@ -255,19 +302,32 @@ def scrape_store(store):
 
     print("\nPRODUCTOS ÚNICOS EXTRAÍDOS:", len(products))
 
-    for product in list(products.values())[:5]:
+    for product in list(products.values())[:10]:
         print("\nPRODUCTO:", product["name"])
         print("CATEGORÍA:", product["category"])
+        print("MODELO FABRICANTE:", product["model"])
+        print("ID INTERNO TIENDA:", product["store_product_id"])
         print("PRECIO ACTUAL:", product["current_price"])
         print("PRECIO ANTERIOR:", product["previous_price"])
-        print("SKU / ID DETECTADO:", product["sku"])
         print("ENLACE:", product["url"])
+
+    identified = sum(
+        1 for product in products.values()
+        if product["model"]
+    )
+
+    print(
+        "\nMODELOS IDENTIFICADOS:",
+        identified,
+        "de",
+        len(products)
+    )
 
     return list(products.values())
 
 
 def main():
-    print("PRECIO RADAR RD - EXTRACCIÓN DE PRODUCTOS")
+    print("PRECIO RADAR RD - EXTRACCIÓN MEJORADA")
     print("SUPABASE: DESACTIVADO")
     print("MODO: SOLO LECTURA")
 
