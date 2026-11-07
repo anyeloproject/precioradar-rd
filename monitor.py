@@ -1,141 +1,110 @@
 
 import json
-import logging
+import re
 import requests
 
 from bs4 import BeautifulSoup
 from urllib.parse import urljoin
 
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(levelname)s | %(message)s"
-)
-
 HEADERS = {
-    "User-Agent": (
-        "Mozilla/5.0 (compatible; PrecioRadarRD/0.1; "
-        "+https://github.com/anyeloproject/precioradar-rd)"
-    )
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/130 Safari/537.36"
 }
 
-
-def find_products(data, results):
-    if isinstance(data, list):
-        for item in data:
-            find_products(item, results)
-
-    elif isinstance(data, dict):
-        types = data.get("@type", [])
-        if isinstance(types, str):
-            types = [types]
-
-        if "Product" in types:
-            offers = data.get("offers", {})
-            if isinstance(offers, list):
-                offers = offers[0] if offers else {}
-
-            if isinstance(offers, dict):
-                price = offers.get("price")
-                currency = offers.get("priceCurrency")
-                availability = offers.get("availability")
-            else:
-                price = currency = availability = None
-
-            results.append({
-                "name": data.get("name"),
-                "sku": data.get("sku"),
-                "price": price,
-                "currency": currency,
-                "availability": availability,
-                "url": data.get("url")
-            })
-
-        for value in data.values():
-            if isinstance(value, (dict, list)):
-                find_products(value, results)
+PRICE_PATTERN = re.compile(
+    r"(?:RD\$|US\$|DOP|\$)\s?[\d,.]+|[\d,.]+\s?(?:DOP|RD\$)",
+    re.IGNORECASE
+)
 
 
 def inspect_store(store):
-    name = store["name"]
-    url = store["url"]
-
-    print("\n" + "=" * 50)
-    print(f"TIENDA: {name}")
-    print(f"URL: {url}")
+    print("\n" + "=" * 55)
+    print("TIENDA:", store["name"])
+    print("URL:", store["url"])
 
     try:
         response = requests.get(
-            url,
+            store["url"],
             headers=HEADERS,
-            timeout=30
+            timeout=40
         )
 
-        print(f"HTTP: {response.status_code}")
+        print("HTTP:", response.status_code)
 
         if response.status_code != 200:
-            print("No se pudo leer la página.")
+            print("No se pudo consultar el catálogo.")
             return
 
         soup = BeautifulSoup(response.text, "lxml")
-        print(f"TÍTULO: {soup.title.get_text(strip=True) if soup.title else 'No encontrado'}")
 
-        products = []
+        print("TÍTULO:", soup.title.get_text(strip=True) if soup.title else "No disponible")
+        print("TAMAÑO HTML:", len(response.text))
 
-        for script in soup.find_all(
-            "script",
-            type="application/ld+json"
-        ):
-            try:
-                data = json.loads(script.string or script.get_text())
-                find_products(data, products)
-            except (json.JSONDecodeError, TypeError):
-                continue
+        # Buscar precios en metadatos y microdatos.
+        metadata = soup.select(
+            'meta[property="product:price:amount"], '
+            'meta[property="og:price:amount"], '
+            'meta[itemprop="price"], '
+            '[itemprop="price"]'
+        )
 
-        # Evitar repetir productos idénticos.
-        unique = {}
-        for product in products:
-            key = (
-                product.get("sku"),
-                product.get("name"),
-                product.get("price")
+        print("\nPRECIOS EN METADATOS:", len(metadata))
+
+        for item in metadata[:15]:
+            value = (
+                item.get("content")
+                or item.get("value")
+                or item.get_text(" ", strip=True)
             )
-            unique[key] = product
+            print("PRECIO METADATO:", value)
 
-        products = list(unique.values())
+        # Buscar posibles precios visibles en el texto.
+        text = soup.get_text(" ", strip=True)
+        matches = list(PRICE_PATTERN.finditer(text))
 
-        print(f"PRODUCTOS DETECTADOS: {len(products)}")
+        print("\nPOSIBLES PRECIOS EN TEXTO:", len(matches))
 
-        for product in products[:10]:
-            print(
-                f"- {product.get('name')} | "
-                f"Precio: {product.get('price')} "
-                f"{product.get('currency') or ''} | "
-                f"SKU: {product.get('sku') or 'No disponible'}"
-            )
+        for match in matches[:20]:
+            start = max(0, match.start() - 100)
+            end = min(len(text), match.end() + 120)
+            print("-", text[start:end])
 
-        if not products:
-            print(
-                "No se detectaron productos estructurados. "
-                "Puede que la tienda cargue su catálogo con JavaScript."
-            )
+        # Buscar enlaces que puedan llevar a productos.
+        links = []
+
+        for a in soup.find_all("a", href=True):
+            href = urljoin(store["url"], a["href"])
+            label = a.get_text(" ", strip=True)
+
+            if any(word in href.lower() for word in [
+                "producto", "product", "p/"
+            ]):
+                if href.startswith("http"):
+                    links.append((label, href))
+
+        print("\nPOSIBLES ENLACES DE PRODUCTOS:", len(links))
+
+        for label, href in links[:10]:
+            print("-", label[:80], "|", href)
+
+        print("\nFIN DEL DIAGNÓSTICO")
 
     except requests.RequestException as error:
-        print(f"ERROR DE CONEXIÓN: {error}")
+        print("ERROR:", error)
 
 
 def main():
-    print("PREC IORADAR RD - PRUEBA DE LECTURA")
-    print("Supabase: DESACTIVADO")
-    print("No se guardarán datos.")
+    print("PRECIO RADAR RD - DIAGNÓSTICO")
+    print("SUPABASE: DESACTIVADO")
+    print("MODO: SOLO LECTURA")
 
-    with open("stores.json", "r", encoding="utf-8") as file:
+    with open("stores.json", encoding="utf-8") as file:
         stores = json.load(file)
 
     for store in stores:
-        if store.get("enabled", False):
+        if store.get("enabled"):
             inspect_store(store)
 
-    print("\nPRUEBA FINALIZADA. No se modificó Supabase.")
+    print("\nPRUEBA TERMINADA. NO SE GUARDARON DATOS.")
 
 
 if __name__ == "__main__":
