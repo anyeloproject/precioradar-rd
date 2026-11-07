@@ -1,12 +1,23 @@
+
 [
   {
     "name": "Casa Cuesta",
-    "url": "https://casacuesta.com/muebles/sala.html",
+    "url": "https://casacuesta.com/electro.html",
+    "enabled": true
+  },
+  {
+    "name": "Casa Cuesta",
+    "url": "https://casacuesta.com/tv-y-tecnologia.html",
     "enabled": true
   },
   {
     "name": "Jumbo",
     "url": "https://jumbo.com.do/electro-hogar",
+    "enabled": true
+  },
+  {
+    "name": "Jumbo",
+    "url": "https://jumbo.com.do/tv-y-tecnologia",
     "enabled": true
   }
 ]
