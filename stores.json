@@ -1,12 +1,12 @@
 [
   {
     "name": "Casa Cuesta",
-    "url": "https://casacuesta.com/",
+    "url": "https://casacuesta.com/muebles/sala.html",
     "enabled": true
   },
   {
     "name": "Jumbo",
-    "url": "https://jumbo.com.do/",
+    "url": "https://jumbo.com.do/electro-hogar",
     "enabled": true
   }
 ]
