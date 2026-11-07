@@ -2,146 +2,202 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="theme-color" content="#101827">
-  <title>PrecioRadar RD | Comparador de precios</title>
-  <style>
-    * { box-sizing: border-box; }
-    body {
-      margin: 0;
-      font-family: Arial, sans-serif;
-      background: #f3f5f9;
-      color: #172033;
-    }
-    header {
-      background: #101827;
-      color: white;
-      padding: 25px 6%;
-    }
-    header h1 { margin: 0; font-size: 27px; }
-    header h1 span { color: #38bdf8; }
-    header p { color: #aab7ca; margin-bottom: 0; }
-    main { max-width: 1150px; margin: 30px auto; padding: 0 18px; }
-    .intro { margin-bottom: 25px; }
-    .intro h2 { margin-bottom: 8px; }
-    .intro p { color: #64748b; }
-    .search {
-      display: flex;
-      gap: 10px;
-      margin: 22px 0;
-    }
-    input, select, button {
-      padding: 13px;
-      border-radius: 9px;
-      border: 1px solid #d8deea;
-      font-size: 15px;
-    }
-    input { flex: 1; min-width: 0; }
-    button {
-      background: #0284c7;
-      color: white;
-      border: none;
-      cursor: pointer;
-      font-weight: bold;
-    }
-    .stats {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 15px;
-    }
-    .card {
-      background: white;
-      border-radius: 13px;
-      padding: 20px;
-      box-shadow: 0 2px 10px #1720330b;
-    }
-    .card small { color: #64748b; }
-    .card h2 { margin-bottom: 0; color: #0284c7; }
-    .section { margin-top: 30px; }
-    .section h3 { margin-bottom: 15px; }
-    .notice {
-      background: #e0f2fe;
-      color: #075985;
-      padding: 16px;
-      border-radius: 10px;
-      line-height: 1.5;
-    }
-    footer {
-      text-align: center;
-      padding: 35px;
-      color: #64748b;
-      font-size: 13px;
-    }
-    @media(max-width:600px) {
-      .stats { grid-template-columns: 1fr; }
-      .search { flex-direction: column; }
-    }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PrecioRadar RD | Compara precios</title>
+<meta name="description" content="Compara precios de electrodomésticos, tecnología y artículos del hogar en República Dominicana.">
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#f4f7fb;color:#172033;font-family:Arial,sans-serif}
+header{background:#102b50;color:white;padding:25px 6%}
+.logo{font-size:27px;font-weight:bold}
+.logo span{color:#54c4ff}
+header p{color:#d4e3f5;margin-bottom:0}
+main{max-width:1100px;margin:auto;padding:25px 18px}
+.hero{background:#fff;padding:30px;border-radius:16px}
+h1{font-size:30px;margin:0 0 10px}
+.subtitle{color:#64748b;line-height:1.5}
+.search{display:flex;gap:10px;margin-top:22px}
+input{flex:1;min-width:0;padding:15px;border:1px solid #cbd5e1;border-radius:9px;font-size:16px}
+button{border:0;border-radius:9px;padding:13px 18px;background:#0878ce;color:white;font-weight:bold;cursor:pointer}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:20px 0}
+.stat{background:white;border-radius:12px;padding:18px}
+.stat strong{display:block;font-size:25px;color:#0878ce}
+.stat small{color:#64748b}
+h2{font-size:21px;margin-top:28px}
+.categories{display:flex;flex-wrap:wrap;gap:9px}
+.categories button{background:white;color:#24415f;border:1px solid #d8e1ec}
+.categories button.active{background:#0878ce;color:white}
+.results{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:14px;margin-top:16px}
+.product{background:white;border-radius:12px;padding:17px;border:1px solid #e4eaf1}
+.product img{width:100%;height:145px;object-fit:contain}
+.product h3{font-size:16px}
+.price{font-size:21px;font-weight:bold;color:#0878ce}
+.muted{color:#64748b;font-size:13px}
+.notice{background:#e8f4ff;color:#24547a;padding:14px;border-radius:10px;margin-top:20px;font-size:14px}
+#status{color:#64748b;margin:15px 0}
+footer{text-align:center;color:#64748b;padding:30px;font-size:13px}
+@media(max-width:550px){.stats{grid-template-columns:1fr}.search{flex-direction:column}h1{font-size:25px}}
+</style>
 </head>
 <body>
-  <header>
-    <h1>Precio<span>Radar</span> RD</h1>
-    <p>Compara. Analiza. Compra inteligentemente.</p>
-  </header>
 
-  <main>
-    <div class="intro">
-      <h2>Encuentra el mejor precio en República Dominicana</h2>
-      <p>Electrodomésticos, electrónica, muebles y artículos del hogar.</p>
-    </div>
+<header>
+  <div class="logo">PrecioRadar <span>RD</span></div>
+  <p>Compara. Ahorra. Compra mejor.</p>
+</header>
 
+<main>
+  <section class="hero">
+    <h1>Encuentra el mejor precio en RD</h1>
+    <p class="subtitle">Compara productos de diferentes tiendas online de República Dominicana y consulta su historial de precios.</p>
     <div class="search">
-      <input id="busqueda" placeholder="Buscar nevera, televisor, lavadora...">
-      <button onclick="buscar()">Buscar productos</button>
+      <input id="search" type="search" placeholder="Buscar marca, modelo o producto...">
+      <button onclick="loadProducts()">Buscar</button>
     </div>
+  </section>
 
-    <div class="stats">
-      <div class="card">
-        <small>Productos registrados</small>
-        <h2 id="productos">0</h2>
-      </div>
-      <div class="card">
-        <small>Tiendas monitoreadas</small>
-        <h2 id="tiendas">0</h2>
-      </div>
-      <div class="card">
-        <small>Días de historial</small>
-        <h2>90</h2>
-      </div>
-    </div>
+  <section class="stats">
+    <div class="stat"><strong id="productCount">—</strong><small>Productos registrados</small></div>
+    <div class="stat"><strong id="storeCount">—</strong><small>Tiendas registradas</small></div>
+    <div class="stat"><strong id="listingCount">—</strong><small>Ofertas registradas</small></div>
+  </section>
 
-    <section class="section">
-      <h3>Explorar categorías</h3>
-      <div class="stats">
-        <div class="card">❄️<h3>Electrodomésticos</h3></div>
-        <div class="card">📺<h3>Electrónica</h3></div>
-        <div class="card">🛋️<h3>Muebles y hogar</h3></div>
-      </div>
-    </section>
+  <h2>Categorías</h2>
+  <div class="categories">
+    <button class="active" onclick="selectCategory('',this)">Todos</button>
+    <button onclick="selectCategory('Electrodomésticos',this)">Electrodomésticos</button>
+    <button onclick="selectCategory('Electrónica',this)">Electrónica</button>
+    <button onclick="selectCategory('Muebles',this)">Muebles</button>
+    <button onclick="selectCategory('Hogar',this)">Hogar</button>
+  </div>
 
-    <section class="section">
-      <h3>Monitoreo de precios</h3>
-      <div class="notice">
-        <strong>Estamos preparando el radar.</strong><br>
-        Los precios aparecerán cuando conectemos las tiendas y activemos la captura diaria. Todavía no hay datos reales registrados.
-      </div>
-    </section>
-  </main>
+  <h2>Productos disponibles</h2>
+  <div id="status">Conectando con PrecioRadar RD...</div>
+  <section id="results" class="results"></section>
 
-  <footer>
-    PrecioRadar RD · Comparación independiente de precios · República Dominicana
-  </footer>
+  <div class="notice">
+    PrecioRadar RD registra precios online diariamente. El historial comenzará a construirse a medida que se recopilen datos reales. No mostramos precios históricos inventados.
+  </div>
+</main>
 
-  <script>
-    function buscar() {
-      const valor = document.getElementById("busqueda").value.trim();
-      if (!valor) {
-        alert("Escribe el producto que deseas buscar.");
-        return;
+<footer>PrecioRadar RD · República Dominicana</footer>
+
+<script>
+const SUPABASE_URL = "https://igitecomybuxyrnyemfd.supabase.co";
+
+// sb_publishable_VlXgJFn-c0T3UqLc9rG8WQ_T2pAtYnG:
+const SUPABASE_KEY = "sb_publishable_VlXgJFn-c0T3UqLc9rG8WQ_T2pAtYnG";
+
+let category = "";
+
+async function api(table, query = "") {
+  const response = await fetch(
+    `${SUPABASE_URL}/rest/v1/${table}?${query}`,
+    {
+      headers: {
+        apikey: SUPABASE_KEY,
+        Authorization: `Bearer ${SUPABASE_KEY}`
       }
-      alert("El buscador de " + valor + " estará conectado a los productos en la próxima etapa.");
     }
-  </script>
+  );
+
+  if (!response.ok) {
+    throw new Error(`Error consultando ${table}: ${response.status}`);
+  }
+
+  return response.json();
+}
+
+async function loadStats() {
+  try {
+    const [products, stores, listings] = await Promise.all([
+      api("products", "select=id"),
+      api("stores", "select=id"),
+      api("listings", "select=id")
+    ]);
+
+    document.getElementById("productCount").textContent = products.length;
+    document.getElementById("storeCount").textContent = stores.length;
+    document.getElementById("listingCount").textContent = listings.length;
+  } catch (error) {
+    console.error(error);
+  }
+}
+
+function escapeHTML(value) {
+  return String(value ?? "").replace(/[&<>"']/g, char => ({
+    "&":"&amp;", "<":"&lt;", ">":"&gt;",
+    '"':"&quot;", "'":"&#39;"
+  })[char]);
+}
+
+async function loadProducts() {
+  const status = document.getElementById("status");
+  const results = document.getElementById("results");
+  const search = document.getElementById("search").value.trim();
+
+  status.textContent = "Buscando productos...";
+  results.innerHTML = "";
+
+  try {
+    const params = new URLSearchParams();
+    params.set("select", "id,name,brand,model,category,image_url");
+    params.set("order", "name.asc");
+    params.set("limit", "100");
+
+    if (category) {
+      params.set("category", `eq.${category}`);
+    }
+
+    if (search) {
+      params.set("or", `(name.ilike.*${search}*,brand.ilike.*${search}*,model.ilike.*${search}*)`);
+    }
+
+    const products = await api("products", params.toString());
+
+    if (!products.length) {
+      status.textContent = "Todavía no hay productos registrados. Pronto comenzaremos a incorporar tiendas y productos reales.";
+      return;
+    }
+
+    status.textContent = `${products.length} producto(s) encontrado(s).`;
+
+    results.innerHTML = products.map(product => `
+      <article class="product">
+        ${product.image_url ? `<img src="${escapeHTML(product.image_url)}" alt="${escapeHTML(product.name)}">` : ""}
+        <h3>${escapeHTML(product.name)}</h3>
+        <p class="muted">${escapeHTML(product.brand || "")} ${escapeHTML(product.model || "")}</p>
+        <p class="muted">${escapeHTML(product.category)}</p>
+        <p class="price">Precio pendiente</p>
+        <p class="muted">Esperando registros de precios.</p>
+      </article>
+    `).join("");
+
+  } catch (error) {
+    console.error(error);
+    status.textContent = "No pudimos conectar. Revisa la configuración de Supabase.";
+  }
+}
+
+function selectCategory(value, button) {
+  category = value;
+  document.querySelectorAll(".categories button").forEach(b => b.classList.remove("active"));
+  button.classList.add("active");
+  loadProducts();
+}
+
+document.getElementById("search").addEventListener("keydown", event => {
+  if (event.key === "Enter") loadProducts();
+});
+
+if (SUPABASE_KEY !== "sb_publishable_VlXgJFn-c0T3UqLc9rG8WQ_T2pAtYnG") {
+  loadStats();
+  loadProducts();
+} else {
+  document.getElementById("status").textContent = "Falta configurar la Publishable Key de Supabase.";
+}
+</script>
+
 </body>
 </html>
