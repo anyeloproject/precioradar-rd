@@ -1,0 +1,147 @@
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#101827">
+  <title>PrecioRadar RD | Comparador de precios</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: #f3f5f9;
+      color: #172033;
+    }
+    header {
+      background: #101827;
+      color: white;
+      padding: 25px 6%;
+    }
+    header h1 { margin: 0; font-size: 27px; }
+    header h1 span { color: #38bdf8; }
+    header p { color: #aab7ca; margin-bottom: 0; }
+    main { max-width: 1150px; margin: 30px auto; padding: 0 18px; }
+    .intro { margin-bottom: 25px; }
+    .intro h2 { margin-bottom: 8px; }
+    .intro p { color: #64748b; }
+    .search {
+      display: flex;
+      gap: 10px;
+      margin: 22px 0;
+    }
+    input, select, button {
+      padding: 13px;
+      border-radius: 9px;
+      border: 1px solid #d8deea;
+      font-size: 15px;
+    }
+    input { flex: 1; min-width: 0; }
+    button {
+      background: #0284c7;
+      color: white;
+      border: none;
+      cursor: pointer;
+      font-weight: bold;
+    }
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 15px;
+    }
+    .card {
+      background: white;
+      border-radius: 13px;
+      padding: 20px;
+      box-shadow: 0 2px 10px #1720330b;
+    }
+    .card small { color: #64748b; }
+    .card h2 { margin-bottom: 0; color: #0284c7; }
+    .section { margin-top: 30px; }
+    .section h3 { margin-bottom: 15px; }
+    .notice {
+      background: #e0f2fe;
+      color: #075985;
+      padding: 16px;
+      border-radius: 10px;
+      line-height: 1.5;
+    }
+    footer {
+      text-align: center;
+      padding: 35px;
+      color: #64748b;
+      font-size: 13px;
+    }
+    @media(max-width:600px) {
+      .stats { grid-template-columns: 1fr; }
+      .search { flex-direction: column; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Precio<span>Radar</span> RD</h1>
+    <p>Compara. Analiza. Compra inteligentemente.</p>
+  </header>
+
+  <main>
+    <div class="intro">
+      <h2>Encuentra el mejor precio en República Dominicana</h2>
+      <p>Electrodomésticos, electrónica, muebles y artículos del hogar.</p>
+    </div>
+
+    <div class="search">
+      <input id="busqueda" placeholder="Buscar nevera, televisor, lavadora...">
+      <button onclick="buscar()">Buscar productos</button>
+    </div>
+
+    <div class="stats">
+      <div class="card">
+        <small>Productos registrados</small>
+        <h2 id="productos">0</h2>
+      </div>
+      <div class="card">
+        <small>Tiendas monitoreadas</small>
+        <h2 id="tiendas">0</h2>
+      </div>
+      <div class="card">
+        <small>Días de historial</small>
+        <h2>90</h2>
+      </div>
+    </div>
+
+    <section class="section">
+      <h3>Explorar categorías</h3>
+      <div class="stats">
+        <div class="card">❄️<h3>Electrodomésticos</h3></div>
+        <div class="card">📺<h3>Electrónica</h3></div>
+        <div class="card">🛋️<h3>Muebles y hogar</h3></div>
+      </div>
+    </section>
+
+    <section class="section">
+      <h3>Monitoreo de precios</h3>
+      <div class="notice">
+        <strong>Estamos preparando el radar.</strong><br>
+        Los precios aparecerán cuando conectemos las tiendas y activemos la captura diaria. Todavía no hay datos reales registrados.
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    PrecioRadar RD · Comparación independiente de precios · República Dominicana
+  </footer>
+
+  <script>
+    function buscar() {
+      const valor = document.getElementById("busqueda").value.trim();
+      if (!valor) {
+        alert("Escribe el producto que deseas buscar.");
+        return;
+      }
+      alert("El buscador de " + valor + " estará conectado a los productos en la próxima etapa.");
+    }
+  </script>
+</body>
+</html>
