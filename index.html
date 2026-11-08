@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -185,6 +186,76 @@
 
     .buy-link:hover { background: #1558bd; }
 
+    .history-button {
+      width: 100%;
+      margin-top: 9px;
+      padding: 10px;
+      border: 1px solid #cbd7e8;
+      border-radius: 8px;
+      background: #f7f9fc;
+      color: #174b91;
+      font-weight: bold;
+      cursor: pointer;
+      font-size: 13px;
+    }
+
+    .history-button:hover {
+      background: #edf3fc;
+    }
+
+    .history-panel {
+      display: none;
+      margin-top: 10px;
+      padding: 12px;
+      border: 1px solid #e2e8f0;
+      border-radius: 9px;
+      background: #fbfcfe;
+    }
+
+    .history-panel.open { display: block; }
+
+    .history-panel h4 {
+      margin: 0 0 8px;
+      font-size: 14px;
+    }
+
+    .history-summary {
+      color: #68758a;
+      font-size: 12px;
+      line-height: 1.6;
+      margin-bottom: 7px;
+    }
+
+    .history-chart {
+      width: 100%;
+      height: 130px;
+      display: block;
+      overflow: visible;
+    }
+
+    .history-list { margin-top: 8px; }
+
+    .history-entry {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+      padding: 7px 0;
+      border-top: 1px solid #edf0f5;
+      font-size: 12px;
+    }
+
+    .history-entry strong {
+      white-space: nowrap;
+      color: #1558bd;
+    }
+
+    .history-empty {
+      color: #68758a;
+      font-size: 12px;
+      line-height: 1.5;
+    }
+
     .empty {
       background: white;
       padding: 30px;
@@ -206,12 +277,19 @@
       .stats { gap: 8px; }
       .stat { padding: 12px; }
       .stat strong { font-size: 21px; }
-      .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+      .grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 10px;
+      }
       .product-image { height: 145px; }
       .product-body { padding: 11px; }
       .product h3 { font-size: 14px; }
       .offer-price { font-size: 19px; }
-      .buy-link { font-size: 12px; padding: 10px 5px; }
+      .buy-link {
+        font-size: 12px;
+        padding: 10px 5px;
+      }
+      .history-entry { font-size: 11px; }
     }
   </style>
 </head>
@@ -230,10 +308,12 @@
         <strong id="totalProducts">—</strong>
         <span>Productos</span>
       </div>
+
       <div class="stat">
         <strong id="totalStores">—</strong>
         <span>Tiendas</span>
       </div>
+
       <div class="stat">
         <strong id="totalOffers">—</strong>
         <span>Ofertas registradas</span>
@@ -302,7 +382,9 @@
     function safeUrl(value) {
       try {
         const url = new URL(value);
-        return ["http:", "https:"].includes(url.protocol) ? url.href : "";
+        return ["http:", "https:"].includes(url.protocol)
+          ? url.href
+          : "";
       } catch {
         return "";
       }
@@ -318,6 +400,154 @@
         currency: "DOP",
         maximumFractionDigits: 2
       }).format(Number(value));
+    }
+
+    function formatDate(value) {
+      const date = new Date(value);
+
+      if (Number.isNaN(date.getTime())) {
+        return "Fecha no disponible";
+      }
+
+      return date.toLocaleString("es-DO", {
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+        hour: "2-digit",
+        minute: "2-digit"
+      });
+    }
+
+    function renderHistory(offer) {
+      const records = offer.history || [];
+
+      if (!records.length) {
+        return `
+          <h4>Historial de precios</h4>
+          <p class="history-empty">
+            Todavía no hay precios históricos para esta oferta.
+          </p>
+        `;
+      }
+
+      const newestFirst = [...records].sort(
+        (a, b) => new Date(b.captured_at) - new Date(a.captured_at)
+      );
+
+      const oldest = records[0];
+      const newest = records[records.length - 1];
+
+      let chart = "";
+
+      if (records.length === 1) {
+        chart = `
+          <svg class="history-chart"
+               viewBox="0 0 320 130"
+               role="img"
+               aria-label="Primer precio registrado">
+            <line x1="18" y1="95" x2="302" y2="95"
+                  stroke="#dce3ee" stroke-width="1"/>
+            <circle cx="160" cy="55" r="5" fill="#1558bd"/>
+            <text x="160" y="25" text-anchor="middle"
+                  font-size="11" fill="#68758a">
+              Primer registro
+            </text>
+            <text x="160" y="116" text-anchor="middle"
+                  font-size="10" fill="#68758a">
+              ${escapeHTML(money(oldest.price))}
+            </text>
+          </svg>
+        `;
+      } else {
+        const values = records
+          .map(item => Number(item.price))
+          .filter(Number.isFinite);
+
+        const min = Math.min(...values);
+        const max = Math.max(...values);
+        const range = max - min || 1;
+
+        const points = records.map((item, index) => {
+          const x = 18 + (index / (records.length - 1)) * 284;
+          const y = 94 - ((Number(item.price) - min) / range) * 68;
+
+          return `${x.toFixed(1)},${y.toFixed(1)}`;
+        }).join(" ");
+
+        chart = `
+          <svg class="history-chart"
+               viewBox="0 0 320 130"
+               role="img"
+               aria-label="Gráfico del historial de precios">
+
+            <line x1="18" y1="95" x2="302" y2="95"
+                  stroke="#dce3ee" stroke-width="1"/>
+
+            <polyline
+              points="${points}"
+              fill="none"
+              stroke="#1558bd"
+              stroke-width="3"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            />
+
+            ${records.map((item, index) => {
+              const x = 18 + (index / (records.length - 1)) * 284;
+              const y = 94 - ((Number(item.price) - min) / range) * 68;
+
+              return `
+                <circle
+                  cx="${x.toFixed(1)}"
+                  cy="${y.toFixed(1)}"
+                  r="3.5"
+                  fill="#1558bd"
+                />
+              `;
+            }).join("")}
+
+            <text x="18" y="116" text-anchor="start"
+                  font-size="9" fill="#68758a">
+              Inicial: ${escapeHTML(money(oldest.price))}
+            </text>
+
+            <text x="302" y="116" text-anchor="end"
+                  font-size="9" fill="#68758a">
+              Actual: ${escapeHTML(money(newest.price))}
+            </text>
+          </svg>
+        `;
+      }
+
+      return `
+        <h4>Historial de precios</h4>
+
+        <div class="history-summary">
+          ${records.length} ${records.length === 1 ? "registro" : "registros"}
+          <br>
+          Inicial: <strong>${money(oldest.price)}</strong>
+          <br>
+          Más reciente: <strong>${money(newest.price)}</strong>
+        </div>
+
+        ${chart}
+
+        ${records.length === 1 ? `
+          <p class="history-empty">
+            Este es el primer precio registrado. El gráfico irá mostrando
+            los cambios cuando la tienda modifique el precio.
+          </p>
+        ` : ""}
+
+        <div class="history-list">
+          ${newestFirst.map(item => `
+            <div class="history-entry">
+              <span>${escapeHTML(formatDate(item.captured_at))}</span>
+              <strong>${money(item.price)}</strong>
+            </div>
+          `).join("")}
+        </div>
+      `;
     }
 
     async function loadData() {
@@ -352,7 +582,10 @@
           limit: "2000"
         });
 
-        const storeIds = [...new Set(listings.map(l => l.store_id).filter(Boolean))];
+        const storeIds = [
+          ...new Set(listings.map(l => l.store_id).filter(Boolean))
+        ];
+
         const listingIds = listings.map(l => l.id);
 
         let stores = [];
@@ -375,8 +608,12 @@
           });
         }
 
-        const storeMap = new Map(stores.map(s => [String(s.id), s.name]));
+        const storeMap = new Map(
+          stores.map(s => [String(s.id), s.name])
+        );
+
         const latestPrice = new Map();
+        const historyByListing = new Map();
 
         for (const item of history) {
           const key = String(item.listing_id);
@@ -384,19 +621,33 @@
           if (!latestPrice.has(key)) {
             latestPrice.set(key, item);
           }
+
+          if (!historyByListing.has(key)) {
+            historyByListing.set(key, []);
+          }
+
+          historyByListing.get(key).push(item);
         }
 
         const offersByProduct = new Map();
 
         for (const listing of listings) {
-          const price = latestPrice.get(String(listing.id));
+          const listingKey = String(listing.id);
+          const price = latestPrice.get(listingKey);
 
           const offer = {
+            listingId: listingKey,
             store: storeMap.get(String(listing.store_id)) || "Tienda",
             url: safeUrl(listing.product_url),
             availability: listing.availability,
             price: price?.price,
-            originalPrice: price?.original_price
+            originalPrice: price?.original_price,
+            history: (historyByListing.get(listingKey) || [])
+              .slice()
+              .sort(
+                (a, b) =>
+                  new Date(a.captured_at) - new Date(b.captured_at)
+              )
           };
 
           const key = String(listing.product_id);
@@ -417,20 +668,29 @@
 
               if (!Number.isFinite(pa)) return 1;
               if (!Number.isFinite(pb)) return -1;
+
               return pa - pb;
             })
         }));
 
-        document.getElementById("totalProducts").textContent = products.length;
-        document.getElementById("totalStores").textContent = stores.length;
-        document.getElementById("totalOffers").textContent = listings.length;
+        document.getElementById("totalProducts").textContent =
+          products.length;
+
+        document.getElementById("totalStores").textContent =
+          stores.length;
+
+        document.getElementById("totalOffers").textContent =
+          listings.length;
 
         status.textContent = `${products.length} productos encontrados.`;
+
         renderProducts();
 
       } catch (error) {
         console.error(error);
-        status.textContent = "No pudimos cargar los datos. Revisa la conexión con Supabase.";
+
+        status.textContent =
+          "No pudimos cargar los datos. Revisa la conexión con Supabase.";
       }
     }
 
@@ -447,6 +707,7 @@
         ].join(" ").toLowerCase();
 
         const matchesSearch = text.includes(search);
+
         const matchesCategory =
           selectedCategory === "Todas" ||
           product.category === selectedCategory;
@@ -460,7 +721,8 @@
         container.innerHTML = `
           <div class="empty">
             No encontramos productos con esa búsqueda.
-          </div>`;
+          </div>
+        `;
         return;
       }
 
@@ -470,63 +732,138 @@
 
         return `
           <article class="product">
+
             <div class="product-image">
               ${image
-                ? `<img src="${escapeHTML(image)}" alt="${escapeHTML(product.name)}" loading="lazy">`
+                ? `
+                  <img
+                    src="${escapeHTML(image)}"
+                    alt="${escapeHTML(product.name)}"
+                    loading="lazy"
+                  >
+                `
                 : `<span class="muted">Imagen no disponible</span>`
               }
             </div>
 
             <div class="product-body">
+
               <h3>${escapeHTML(product.name)}</h3>
 
               <p class="muted">
                 ${escapeHTML(product.brand || "")}
-                ${product.model ? " · Modelo: " + escapeHTML(product.model) : ""}
+                ${
+                  product.model
+                    ? " · Modelo: " + escapeHTML(product.model)
+                    : ""
+                }
               </p>
 
               ${
                 offers.length
                   ? offers.map(offer => `
                     <div class="offer">
-                      <div class="offer-store">${escapeHTML(offer.store)}</div>
+
+                      <div class="offer-store">
+                        ${escapeHTML(offer.store)}
+                      </div>
 
                       <div class="offer-price">
                         ${money(offer.price)}
+
                         ${
                           offer.originalPrice &&
                           Number(offer.originalPrice) > Number(offer.price)
-                            ? `<span class="old-price">${money(offer.originalPrice)}</span>`
+                            ? `
+                              <span class="old-price">
+                                ${money(offer.originalPrice)}
+                              </span>
+                            `
                             : ""
                         }
                       </div>
 
-                      ${offer.availability
-                        ? `<div class="muted">${escapeHTML(offer.availability)}</div>`
-                        : ""
+                      ${
+                        offer.availability
+                          ? `
+                            <div class="muted">
+                              ${escapeHTML(offer.availability)}
+                            </div>
+                          `
+                          : ""
                       }
+
+                      <button
+                        class="history-button"
+                        type="button"
+                        data-history-id="${escapeHTML(offer.listingId)}"
+                        data-history-count="${offer.history.length}"
+                        aria-expanded="false"
+                      >
+                        Ver historial de precios (${offer.history.length})
+                      </button>
+
+                      <div
+                        class="history-panel"
+                        id="history-${escapeHTML(offer.listingId)}"
+                      >
+                        ${renderHistory(offer)}
+                      </div>
 
                       ${
                         offer.url
-                          ? `<a class="buy-link"
-                               href="${escapeHTML(offer.url)}"
-                               target="_blank"
-                               rel="noopener noreferrer">
-                               Ver producto en ${escapeHTML(offer.store)} ↗
-                             </a>`
+                          ? `
+                            <a
+                              class="buy-link"
+                              href="${escapeHTML(offer.url)}"
+                              target="_blank"
+                              rel="noopener noreferrer"
+                            >
+                              Ver producto en
+                              ${escapeHTML(offer.store)} ↗
+                            </a>
+                          `
                           : `<p class="muted">Enlace no disponible</p>`
                       }
+
                     </div>
                   `).join("")
-                  : `<div class="offer muted">Todavía no hay ofertas registradas.</div>`
+                  : `
+                    <div class="offer muted">
+                      Todavía no hay ofertas registradas.
+                    </div>
+                  `
               }
+
             </div>
           </article>
         `;
       }).join("");
     }
 
-    document.getElementById("search").addEventListener("input", renderProducts);
+    document.getElementById("products").addEventListener("click", event => {
+      const button = event.target.closest(".history-button");
+
+      if (!button) return;
+
+      const listingId = button.dataset.historyId;
+      const panel = document.getElementById(`history-${listingId}`);
+
+      if (!panel) return;
+
+      const isOpen = panel.classList.toggle("open");
+
+      button.setAttribute("aria-expanded", String(isOpen));
+
+      button.textContent = isOpen
+        ? "Ocultar historial"
+        : `Ver historial de precios (${button.dataset.historyCount})`;
+    });
+
+    document.getElementById("search").addEventListener(
+      "input",
+      renderProducts
+    );
 
     document.querySelectorAll(".filter").forEach(button => {
       button.addEventListener("click", () => {
@@ -536,6 +873,7 @@
 
         button.classList.add("active");
         selectedCategory = button.dataset.category;
+
         renderProducts();
       });
     });
