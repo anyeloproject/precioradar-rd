@@ -1,3 +1,4 @@
+
 import json
 import re
 import time
@@ -199,20 +200,44 @@ def supabase_request(method, table, params=None, payload=None):
     return response.json()
 
 
-def find_or_create_store(name):
+def find_or_create_store(name, store_url):
+    parsed = urlparse(store_url)
+    website_url = f"{parsed.scheme}://{parsed.netloc}"
+
     rows = supabase_request(
         "GET", "stores",
-        params={"select": "id", "name": f"eq.{name}", "limit": "1"}
+        params={
+            "select": "id,website_url",
+            "name": f"eq.{name}",
+            "limit": "1"
+        }
     )
+
     if rows:
-        return rows[0]["id"]
+        store_id = rows[0]["id"]
+
+        if not rows[0].get("website_url"):
+            supabase_request(
+                "PATCH", "stores",
+                params={"id": f"eq.{store_id}"},
+                payload={"website_url": website_url}
+            )
+
+        return store_id
 
     rows = supabase_request(
         "POST", "stores",
-        payload={"name": name}
+        payload={
+            "name": name,
+            "website_url": website_url,
+            "country": "DO",
+            "active": True
+        }
     )
+
     if not rows:
         raise RuntimeError(f"No se pudo crear la tienda {name}.")
+
     return rows[0]["id"]
 
 
@@ -302,8 +327,8 @@ def save_price(listing_id, product):
     return True
 
 
-def save_product(store_name, product):
-    store_id = find_or_create_store(store_name)
+def save_product(store_name, store_url, product):
+    store_id = find_or_create_store(store_name, store_url)
     product_id = find_or_create_product(product)
     listing_id = find_or_create_listing(
         product_id, store_id, product
@@ -363,7 +388,7 @@ def scrape_store(store):
 
     for product in products.values():
         try:
-            if save_product(name, product):
+            if save_product(name, store["url"], product):
                 saved += 1
             else:
                 unchanged += 1
