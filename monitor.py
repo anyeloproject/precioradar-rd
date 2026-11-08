@@ -34,13 +34,67 @@ def money(value):
 def clean_url(base_url, href):
     if not href:
         return None
-    full_url = urljoin(base_url, href.strip())
+
+    href = href.strip()
+
+    if href.startswith("data:") or href.startswith("javascript:"):
+        return None
+
+    full_url = urljoin(base_url, href)
     parsed = urlparse(full_url)
+
+    if parsed.scheme not in ("http", "https"):
+        return None
+
     path = re.sub(r"/{2,}", "/", parsed.path)
+
     return urlunparse((
-        parsed.scheme, parsed.netloc, path,
-        parsed.params, parsed.query, parsed.fragment
+        parsed.scheme,
+        parsed.netloc,
+        path,
+        parsed.params,
+        parsed.query,
+        parsed.fragment
     ))
+
+
+def extract_image(card, base_url):
+    selectors = [
+        ".product-image-photo",
+        ".product-image img",
+        ".product-item-photo img",
+        ".product.photo img",
+        "img"
+    ]
+
+    for selector in selectors:
+        for image in card.select(selector):
+            candidates = [
+                image.get("data-src"),
+                image.get("data-original"),
+                image.get("data-lazy-src"),
+                image.get("data-image"),
+                image.get("src")
+            ]
+
+            srcset = image.get("data-srcset") or image.get("srcset")
+
+            if srcset:
+                for candidate in srcset.split(","):
+                    candidate = candidate.strip().split(" ")[0]
+                    if candidate:
+                        candidates.append(candidate)
+
+            for candidate in candidates:
+                image_url = clean_url(base_url, candidate)
+
+                if image_url:
+                    if image_url.startswith("https://"):
+                        return image_url
+
+                    return image_url
+
+    return None
 
 
 def get_store_id(url):
@@ -51,16 +105,22 @@ def get_store_id(url):
 def get_model(name):
     if not name:
         return None
+
     candidates = re.findall(
         r"(?<![A-Z0-9])[A-Z0-9]+(?:-[A-Z0-9]+)*(?![A-Z0-9])",
         name.upper()
     )
+
     for candidate in reversed(candidates):
         compact = candidate.replace("-", "")
-        if (re.search(r"[A-Z]", compact)
-                and re.search(r"\d", compact)
-                and len(compact) >= 5):
+
+        if (
+            re.search(r"[A-Z]", compact)
+            and re.search(r"\d", compact)
+            and len(compact) >= 5
+        ):
             return candidate
+
     return None
 
 
@@ -76,17 +136,22 @@ def extract_casa_cuesta(card, base_url):
     title = card.select_one(
         ".product-item-link, .product.name a, a.product-item-link"
     )
+
     price = card.select_one(
         ".special-price .price, .price-final_price .price, .price-box .price"
     )
+
     if not title or not price:
         return None
 
     name = title.get_text(" ", strip=True)
     url = clean_url(base_url, title.get("href"))
     current = money(price.get_text(" ", strip=True))
+
     old_node = card.select_one(".old-price .price")
     old = money(old_node.get_text(" ", strip=True)) if old_node else None
+
+    image_url = extract_image(card, base_url)
 
     if not name or current is None or not url:
         return None
@@ -97,32 +162,39 @@ def extract_casa_cuesta(card, base_url):
         "previous_price": old,
         "model": get_model(name),
         "store_product_id": get_store_id(url),
-        "url": url
+        "url": url,
+        "image_url": image_url
     }
 
 
 def extract_jumbo(card, base_url):
     details = card.select_one(".product-item-details")
+
     if not details:
         return None
 
     link = details.select_one(
         "a.product-item-link, .product-item-name a"
     )
+
     if not link:
         link = card.select_one("a[href*='jumbo.com.do']")
+
     if not link:
         return None
 
     name = link.get_text(" ", strip=True)
     url = clean_url(base_url, link.get("href"))
+
     box = details.select_one(".price-box")
+
     if not box:
         return None
 
     current_node = box.select_one(
         ".special-price .price, .price-final_price .price"
     )
+
     old_node = box.select_one(".old-price .price")
 
     if current_node:
@@ -132,10 +204,13 @@ def extract_jumbo(card, base_url):
             money(n.get_text(" ", strip=True))
             for n in box.select(".price")
         ]
+
         prices = [p for p in prices if p is not None]
         current = prices[0] if prices else None
 
     old = money(old_node.get_text(" ", strip=True)) if old_node else None
+
+    image_url = extract_image(card, base_url)
 
     if not name or current is None or not url:
         return None
@@ -146,7 +221,8 @@ def extract_jumbo(card, base_url):
         "previous_price": old,
         "model": get_model(name),
         "store_product_id": get_store_id(url),
-        "url": url
+        "url": url,
+        "image_url": image_url
     }
 
 
@@ -154,16 +230,20 @@ def next_page_url(soup, current_url):
     node = soup.select_one(
         "a.action.next, li.pages-item-next a, a[rel='next']"
     )
+
     if node and node.get("href"):
         return clean_url(current_url, node["href"])
 
     parsed = urlparse(current_url)
     params = parse_qs(parsed.query)
     page = int(params.get("p", ["1"])[0])
+
     params["p"] = [str(page + 1)]
+
     next_url = urlunparse(
         parsed._replace(query=urlencode(params, doseq=True))
     )
+
     return clean_url(current_url, next_url)
 
 
@@ -172,6 +252,7 @@ def supabase_request(method, table, params=None, payload=None):
         raise RuntimeError("Faltan los secretos de Supabase en GitHub.")
 
     url = f"{SUPABASE_URL}/rest/v1/{table}"
+
     headers = {
         "apikey": SUPABASE_KEY,
         "Authorization": f"Bearer {SUPABASE_KEY}",
@@ -205,7 +286,8 @@ def find_or_create_store(name, store_url):
     website_url = f"{parsed.scheme}://{parsed.netloc}"
 
     rows = supabase_request(
-        "GET", "stores",
+        "GET",
+        "stores",
         params={
             "select": "id,website_url",
             "name": f"eq.{name}",
@@ -218,7 +300,8 @@ def find_or_create_store(name, store_url):
 
         if not rows[0].get("website_url"):
             supabase_request(
-                "PATCH", "stores",
+                "PATCH",
+                "stores",
                 params={"id": f"eq.{store_id}"},
                 payload={"website_url": website_url}
             )
@@ -226,7 +309,8 @@ def find_or_create_store(name, store_url):
         return store_id
 
     rows = supabase_request(
-        "POST", "stores",
+        "POST",
+        "stores",
         payload={
             "name": name,
             "website_url": website_url,
@@ -243,29 +327,53 @@ def find_or_create_store(name, store_url):
 
 def find_or_create_product(product):
     params = {
-        "select": "id",
+        "select": "id,image_url",
         "name": f"eq.{product['name']}",
         "category": f"eq.{product['category']}",
         "limit": "1"
     }
+
     rows = supabase_request("GET", "products", params=params)
+
     if rows:
-        return rows[0]["id"]
+        product_id = rows[0]["id"]
+
+        # Completar la foto de productos que ya existían sin imagen.
+        if product.get("image_url") and not rows[0].get("image_url"):
+            supabase_request(
+                "PATCH",
+                "products",
+                params={"id": f"eq.{product_id}"},
+                payload={"image_url": product["image_url"]}
+            )
+
+        return product_id
 
     payload = {
         "name": product["name"],
         "model": product["model"],
         "category": product["category"]
     }
-    rows = supabase_request("POST", "products", payload=payload)
+
+    if product.get("image_url"):
+        payload["image_url"] = product["image_url"]
+
+    rows = supabase_request(
+        "POST",
+        "products",
+        payload=payload
+    )
+
     if not rows:
         raise RuntimeError("No se pudo crear el producto.")
+
     return rows[0]["id"]
 
 
 def find_or_create_listing(product_id, store_id, product):
     rows = supabase_request(
-        "GET", "listings",
+        "GET",
+        "listings",
         params={
             "select": "id",
             "store_id": f"eq.{store_id}",
@@ -276,18 +384,22 @@ def find_or_create_listing(product_id, store_id, product):
 
     if rows:
         listing_id = rows[0]["id"]
+
         supabase_request(
-            "PATCH", "listings",
+            "PATCH",
+            "listings",
             params={"id": f"eq.{listing_id}"},
             payload={
                 "availability": True,
                 "product_url": product["url"]
             }
         )
+
         return listing_id
 
     rows = supabase_request(
-        "POST", "listings",
+        "POST",
+        "listings",
         payload={
             "product_id": product_id,
             "store_id": store_id,
@@ -295,14 +407,17 @@ def find_or_create_listing(product_id, store_id, product):
             "availability": True
         }
     )
+
     if not rows:
         raise RuntimeError("No se pudo crear la publicación.")
+
     return rows[0]["id"]
 
 
 def save_price(listing_id, product):
     latest = supabase_request(
-        "GET", "price_history",
+        "GET",
+        "price_history",
         params={
             "select": "price",
             "listing_id": f"eq.{listing_id}",
@@ -317,22 +432,29 @@ def save_price(listing_id, product):
         return False
 
     supabase_request(
-        "POST", "price_history",
+        "POST",
+        "price_history",
         payload={
             "listing_id": listing_id,
             "price": current,
             "original_price": product["previous_price"]
         }
     )
+
     return True
 
 
 def save_product(store_name, store_url, product):
     store_id = find_or_create_store(store_name, store_url)
+
     product_id = find_or_create_product(product)
+
     listing_id = find_or_create_listing(
-        product_id, store_id, product
+        product_id,
+        store_id,
+        product
     )
+
     return save_price(listing_id, product)
 
 
@@ -340,6 +462,7 @@ def scrape_store(store):
     name = store["name"]
     url = store["url"]
     category = get_category(url)
+
     products = {}
     visited = set()
 
@@ -348,10 +471,17 @@ def scrape_store(store):
     for page in range(1, MAX_PAGES + 1):
         if url in visited:
             break
+
         visited.add(url)
 
-        response = requests.get(url, headers=HEADERS, timeout=40)
+        response = requests.get(
+            url,
+            headers=HEADERS,
+            timeout=40
+        )
+
         print(f"PÁGINA {page} | HTTP {response.status_code}")
+
         if response.status_code != 200:
             break
 
@@ -369,11 +499,13 @@ def scrape_store(store):
 
         for card in cards:
             item = extractor(card, url)
+
             if item:
                 item["category"] = category
                 products[item["url"]] = item
 
         next_url = next_page_url(soup, url)
+
         if not cards or next_url == url or next_url in visited:
             break
 
@@ -381,6 +513,13 @@ def scrape_store(store):
         time.sleep(1)
 
     print(f"Productos extraídos: {len(products)}")
+
+    with_images = sum(
+        1 for product in products.values()
+        if product.get("image_url")
+    )
+
+    print(f"Productos con imagen encontrada: {with_images}")
 
     saved = 0
     unchanged = 0
@@ -392,8 +531,10 @@ def scrape_store(store):
                 saved += 1
             else:
                 unchanged += 1
+
         except Exception as error:
             errors += 1
+
             print(
                 "ERROR GUARDANDO:",
                 product["name"],
@@ -405,11 +546,12 @@ def scrape_store(store):
         f"Precios nuevos: {saved} | Sin cambio: {unchanged} "
         f"| Errores: {errors}"
     )
-    return len(products), saved, errors
+
+    return len(products), saved, errors, with_images
 
 
 def main():
-    print("PRECIO RADAR RD - CAPTURA Y SUPABASE")
+    print("PRECIO RADAR RD - CAPTURA, IMÁGENES Y SUPABASE")
 
     with open("stores.json", encoding="utf-8") as file:
         stores = json.load(file)
@@ -417,16 +559,20 @@ def main():
     total = 0
     saved = 0
     errors = 0
+    images = 0
 
     for store in stores:
         if store.get("enabled"):
-            count, new_prices, failed = scrape_store(store)
+            count, new_prices, failed, image_count = scrape_store(store)
+
             total += count
             saved += new_prices
             errors += failed
+            images += image_count
 
     print("\nRESUMEN")
     print("Productos extraídos:", total)
+    print("Productos con imagen encontrada:", images)
     print("Precios nuevos:", saved)
     print("Errores:", errors)
 
